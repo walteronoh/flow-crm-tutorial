@@ -2,6 +2,7 @@ package com.example.application.views.list;
 
 import com.example.application.data.entity.Contact;
 import com.example.application.services.CrmService;
+import com.example.application.views.MainLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
@@ -11,11 +12,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
-import java.util.Collections;
+import jakarta.annotation.security.PermitAll;
 
 @PageTitle("Contacts")
-@Route(value = "")
+@Route(value = "", layout = MainLayout.class)
+@PermitAll
 public class ListView extends VerticalLayout {
     //we need a grid and a text field
     Grid<Contact> grid = new Grid<>(Contact.class);
@@ -65,6 +66,27 @@ public class ListView extends VerticalLayout {
     private void configureForm() {
         contactForm = new ContactForm(crmService.findAllCompanies(), crmService.findAllStatuses());
         contactForm.setWidth("25em");
+
+
+        contactForm.addSaveListener(this::saveContact);
+        contactForm.addDeleteListener(this::deleteContact);
+        contactForm.addCloseListener(this::closeContact);
+    }
+
+    private  void saveContact(ContactForm.SaveEvent event) {
+        crmService.saveContact(event.getContact());
+        updateList();
+        closeEditor();
+    }
+
+    private void deleteContact(ContactForm.DeleteEvent event) {
+        crmService.deleteContact(event.getContact());
+        updateList();
+        closeEditor();
+    }
+
+    private void closeContact(ContactForm.CloseEvent event) {
+        closeEditor();
     }
 
     private Component getToolBar() {
@@ -74,9 +96,16 @@ public class ListView extends VerticalLayout {
         filterText.addValueChangeListener(e -> updateList());
 
         Button addContactButton = new Button("Add contact");
+        addContactButton.addClickListener(e -> addContact());
+
         HorizontalLayout toolBar = new HorizontalLayout(filterText, addContactButton);
         toolBar.addClassName("toolBar");
         return toolBar;
+    }
+
+    private void addContact() {
+        grid.asSingleSelect().clear();
+        editContact(new Contact());
     }
 
     private void configureGrid() {
